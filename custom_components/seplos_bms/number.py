@@ -267,3 +267,4 @@ class SeplosBMSNumber(CoordinatorEntity[SeplosBMSCoordinator], NumberEntity):
                 self.coordinator.data[desc.key] = value
             self.async_write_ha_state()
             self.hass.async_create_task(self.coordinator.async_request_refresh())
+

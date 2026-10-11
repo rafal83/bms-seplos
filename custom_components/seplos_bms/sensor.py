@@ -47,7 +47,8 @@ SENSORS: tuple[SeplosSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        value_fn=lambda data: data.get("voltage"),
+        suggested_display_precision=2,
+        value_fn=lambda data: round(float(data["voltage"]), 2) if data.get("voltage") is not None else None,
     ),
     SeplosSensorEntityDescription(
         key="current",
@@ -130,6 +131,7 @@ SENSORS: tuple[SeplosSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=3,
         value_fn=lambda data: data.get("min_cell_voltage"),
     ),
     SeplosSensorEntityDescription(
@@ -139,6 +141,7 @@ SENSORS: tuple[SeplosSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        suggested_display_precision=3,
         value_fn=lambda data: data.get("max_cell_voltage"),
     ),
     SeplosSensorEntityDescription(
@@ -228,6 +231,7 @@ class SeplosCellVoltageSensor(CoordinatorEntity[SeplosBMSCoordinator], SensorEnt
     _attr_device_class = SensorDeviceClass.VOLTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfElectricPotential.VOLT
+    _attr_suggested_display_precision = 3
     _attr_icon = "mdi:battery-outline"
 
     def __init__(

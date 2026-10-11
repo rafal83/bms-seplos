@@ -91,3 +91,4 @@ class SeplosBMSSwitch(CoordinatorEntity[SeplosBMSCoordinator], SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         await self.coordinator.async_set_switch(self._key, False)
+
