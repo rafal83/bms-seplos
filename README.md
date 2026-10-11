@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="images/logo.png" alt="Seplos BMS Logo" width="130">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="custom_components/seplos_bms/brand/dark_logo.png">
+    <img alt="Seplos BMS" src="custom_components/seplos_bms/brand/logo.png" width="140">
+  </picture>
 </p>
 
 <h1 align="center">Seplos BMS (Bluetooth / BLE)</h1>
