@@ -35,7 +35,8 @@
     },
     "abort": {
       "already_configured": "This device is already configured in Home Assistant.",
-      "no_devices_found": "No Seplos BMS found nearby."
+      "no_devices_found": "No Seplos BMS found nearby.",
+      "not_supported": "This device is not a supported Seplos BMS."
     }
   },
   "options": {

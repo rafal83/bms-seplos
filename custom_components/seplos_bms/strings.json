@@ -35,7 +35,8 @@
     },
     "abort": {
       "already_configured": "Cet appareil est déjà configuré dans Home Assistant.",
-      "no_devices_found": "Aucun BMS Seplos n'a été détecté à proximité."
+      "no_devices_found": "Aucun BMS Seplos n'a été détecté à proximité.",
+      "not_supported": "Cet appareil n'est pas un BMS Seplos pris en charge."
     }
   },
   "options": {
