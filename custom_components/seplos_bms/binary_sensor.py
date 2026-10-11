@@ -21,6 +21,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import ALARM_BITS, DOMAIN
 from .coordinator import SeplosBMSCoordinator
 
+PARALLEL_UPDATES = 0
+
 
 @dataclass(frozen=True, kw_only=True)
 class SeplosBinarySensorEntityDescription(BinarySensorEntityDescription):
@@ -100,13 +102,7 @@ class SeplosBMSBinarySensor(
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.address}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, coordinator.address)},
-            name=coordinator.device_name,
-            manufacturer=coordinator.bms_device_info.get("manufacturer", "Seplos"),
-            model=coordinator.bms_device_info.get("model", "Smart BMS"),
-            sw_version=coordinator.bms_device_info.get("sw_version"),
-        )
+        self._attr_device_info = coordinator.device_info
 
     @property
     def is_on(self) -> bool | None:

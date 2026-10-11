@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from aiobmsble.utils import bms_identify
 import voluptuous as vol
 
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
     async_discovered_service_info,
-    async_process_meldfiles,
 )
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -23,9 +23,12 @@ from homeassistant.helpers.device_registry import format_mac
 
 from .const import (
     CONF_ADDRESS,
+    CONF_KEEP_ALIVE,
     CONF_NAME,
     CONF_PROTOCOL,
     CONF_SCAN_INTERVAL,
+    CONF_TYPE,
+    DEFAULT_KEEP_ALIVE,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -40,19 +43,41 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def is_seplos_device(discovery_info: BluetoothServiceInfoBleak) -> bool:
-    """Check if the discovered device is a Seplos BMS."""
-    name = (discovery_info.name or "").strip()
-    if name.startswith(("SP", "BP", "XZHX", "CSY", "ST", "SmartBat")):
-        return True
+async def async_identify_seplos(
+    discovery_info: BluetoothServiceInfoBleak,
+) -> tuple[bool, str | None]:
+    """Check if device is a Seplos BMS and identify module type."""
+    # Try identifying via aiobmsble pattern matching first
+    try:
+        bms_class = await bms_identify(discovery_info.advertisement, discovery_info.address)
+        if bms_class:
+            bms_mod = str(bms_class.get_bms_module())
+            if "seplos" in bms_mod.lower():
+                return True, bms_mod
+    except Exception as err:
+        _LOGGER.debug("bms_identify failed for %s: %s", discovery_info.address, err)
 
+    # Fallback to local name & service UUID checks
+    name = (discovery_info.name or "").strip()
     uuids = [u.lower() for u in (discovery_info.service_uuids or [])]
-    return (
-        UUID_SERVICE_V2.lower() in uuids
-        or UUID_SERVICE_V3.lower() in uuids
+
+    is_v2 = (
+        name.startswith(("BP0", "BP1", "BP2"))
+        or UUID_SERVICE_V2.lower() in uuids
         or "0000ff00-0000-1000-8000-00805f9b34fb" in uuids
+    )
+    if is_v2:
+        return True, "aiobmsble.bms.seplos_v2_bms"
+
+    is_v3 = (
+        name.startswith(("SP", "BP", "XZHX", "CSY", "ST", "SmartBat"))
+        or UUID_SERVICE_V3.lower() in uuids
         or "0000fff0-0000-1000-8000-00805f9b34fb" in uuids
     )
+    if is_v3:
+        return True, "aiobmsble.bms.seplos_bms"
+
+    return False, None
 
 
 class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -63,12 +88,16 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the config flow."""
         self._discovery_info: BluetoothServiceInfoBleak | None = None
-        self._discovered_devices: dict[str, BluetoothServiceInfoBleak] = {}
+        self._discovered_devices: dict[str, tuple[BluetoothServiceInfoBleak, str | None]] = {}
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> FlowResult:
         """Handle the bluetooth discovery step."""
+        is_seplos, bms_type = await async_identify_seplos(discovery_info)
+        if not is_seplos:
+            return self.async_abort(reason="not_supported")
+
         await self.async_set_unique_id(format_mac(discovery_info.address))
         self._abort_if_unique_id_configured()
 
@@ -77,6 +106,7 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
             "name": discovery_info.name or DEFAULT_NAME,
             "address": discovery_info.address,
         }
+        self.context["bms_type"] = bms_type
         return await self.async_step_bluetooth_confirm()
 
     async def async_step_bluetooth_confirm(
@@ -86,14 +116,18 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
         assert self._discovery_info is not None
 
         if user_input is not None:
+            data: dict[str, Any] = {
+                CONF_ADDRESS: self._discovery_info.address,
+                CONF_NAME: self._discovery_info.name or DEFAULT_NAME,
+                CONF_PROTOCOL: user_input.get(CONF_PROTOCOL, PROTOCOL_AUTO),
+                CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            }
+            if bms_type := self.context.get("bms_type"):
+                data[CONF_TYPE] = bms_type
+
             return self.async_create_entry(
                 title=self._discovery_info.name or f"Seplos BMS ({self._discovery_info.address})",
-                data={
-                    CONF_ADDRESS: self._discovery_info.address,
-                    CONF_NAME: self._discovery_info.name or DEFAULT_NAME,
-                    CONF_PROTOCOL: user_input.get(CONF_PROTOCOL, PROTOCOL_AUTO),
-                    CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                },
+                data=data,
             )
 
         schema = vol.Schema(
@@ -128,17 +162,23 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(format_mac(address), raise_on_progress=False)
             self._abort_if_unique_id_configured()
 
-            disc = self._discovered_devices.get(address)
+            disc_entry = self._discovered_devices.get(address)
+            disc = disc_entry[0] if disc_entry else None
+            bms_type = disc_entry[1] if disc_entry else None
             name = (disc.name if disc else None) or DEFAULT_NAME
+
+            data: dict[str, Any] = {
+                CONF_ADDRESS: address,
+                CONF_NAME: name,
+                CONF_PROTOCOL: user_input.get(CONF_PROTOCOL, PROTOCOL_AUTO),
+                CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            }
+            if bms_type:
+                data[CONF_TYPE] = bms_type
 
             return self.async_create_entry(
                 title=f"{name} ({address})",
-                data={
-                    CONF_ADDRESS: address,
-                    CONF_NAME: name,
-                    CONF_PROTOCOL: user_input.get(CONF_PROTOCOL, PROTOCOL_AUTO),
-                    CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                },
+                data=data,
             )
 
         # Discover devices currently advertising
@@ -148,12 +188,13 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
         for disc in async_discovered_service_info(self.hass, connectable=True):
             if format_mac(disc.address) in current_addresses:
                 continue
-            if is_seplos_device(disc):
-                self._discovered_devices[disc.address] = disc
+            is_seplos, bms_type = await async_identify_seplos(disc)
+            if is_seplos:
+                self._discovered_devices[disc.address] = (disc, bms_type)
 
         device_options = {
             address: f"{disc.name or 'Unknown'} ({address}) [RSSI: {disc.rssi} dBm]"
-            for address, disc in self._discovered_devices.items()
+            for address, (disc, _) in self._discovered_devices.items()
         }
         device_options["manual"] = "Saisie manuelle de l'adresse MAC (Manual Entry)"
 
@@ -259,4 +300,3 @@ class SeplosBMSOptionsFlow(OptionsFlow):
         )
 
         return self.async_show_form(step_id="init", data_schema=schema)
-

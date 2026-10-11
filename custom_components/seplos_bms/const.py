@@ -7,6 +7,7 @@ DOMAIN: Final = "seplos_bms"
 CONF_ADDRESS: Final = "address"
 CONF_NAME: Final = "name"
 CONF_PROTOCOL: Final = "protocol"
+CONF_TYPE: Final = "type"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_KEEP_ALIVE: Final = "keep_alive"
 
@@ -41,4 +42,3 @@ ALARM_BITS: Final = {
     0x0040: "cell_imbalance",
     0x0080: "short_circuit",
 }
-

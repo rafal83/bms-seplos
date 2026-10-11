@@ -29,6 +29,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import SeplosBMSCoordinator
 
+PARALLEL_UPDATES = 0
+
 
 @dataclass(frozen=True, kw_only=True)
 class SeplosSensorEntityDescription(SensorEntityDescription):
@@ -211,13 +213,7 @@ class SeplosBMSSensor(CoordinatorEntity[SeplosBMSCoordinator], SensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.address}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, coordinator.address)},
-            name=coordinator.device_name,
-            manufacturer=coordinator.bms_device_info.get("manufacturer", "Seplos"),
-            model=coordinator.bms_device_info.get("model", "Smart BMS"),
-            sw_version=coordinator.bms_device_info.get("sw_version"),
-        )
+        self._attr_device_info = coordinator.device_info
 
     @property
     def native_value(self) -> Any:
@@ -244,13 +240,7 @@ class SeplosCellVoltageSensor(CoordinatorEntity[SeplosBMSCoordinator], SensorEnt
         self.cell_index = cell_index
         self._attr_name = f"Tension cellule {cell_index} (Cell {cell_index} Voltage)"
         self._attr_unique_id = f"{coordinator.address}_cell_voltage_{cell_index}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, coordinator.address)},
-            name=coordinator.device_name,
-            manufacturer=coordinator.bms_device_info.get("manufacturer", "Seplos"),
-            model=coordinator.bms_device_info.get("model", "Smart BMS"),
-            sw_version=coordinator.bms_device_info.get("sw_version"),
-        )
+        self._attr_device_info = coordinator.device_info
 
     @property
     def native_value(self) -> float | None:
