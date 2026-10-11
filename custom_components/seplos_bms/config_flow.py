@@ -15,10 +15,10 @@ from homeassistant.components.bluetooth import (
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
-    ConfigFlowResult,
-    OptionsFlowWithReload,
+    OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.device_registry import format_mac
 
 from .const import (
@@ -92,7 +92,7 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
-    ) -> ConfigFlowResult:
+    ) -> FlowResult:
         """Handle the bluetooth discovery step."""
         is_seplos, bms_type = await async_identify_seplos(discovery_info)
         if not is_seplos:
@@ -111,7 +111,7 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_bluetooth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    ) -> FlowResult:
         """Confirm discovery."""
         assert self._discovery_info is not None
 
@@ -150,7 +150,7 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    ) -> FlowResult:
         """Handle the user step to pick or enter a device."""
         errors: dict[str, str] = {}
 
@@ -216,7 +216,7 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_manual(
         self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    ) -> FlowResult:
         """Handle manual entry of MAC address."""
         errors: dict[str, str] = {}
 
@@ -256,17 +256,21 @@ class SeplosBMSConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlowWithReload:
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         """Get the options flow for this handler."""
-        return SeplosBMSOptionsFlow()
+        return SeplosBMSOptionsFlow(config_entry)
 
 
-class SeplosBMSOptionsFlow(OptionsFlowWithReload):
+class SeplosBMSOptionsFlow(OptionsFlow):
     """Handle options flow for Seplos BMS."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

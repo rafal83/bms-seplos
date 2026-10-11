@@ -82,17 +82,34 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Seplos BMS from a config entry."""
-    address = entry.unique_id or entry.data.get(CONF_ADDRESS)
-    if not address:
+    raw_addr = entry.data.get(CONF_ADDRESS) or entry.unique_id
+    if not raw_addr:
         raise ConfigEntryError("Missing unique_id / address for Seplos BMS")
 
+    target_upper = raw_addr.upper()
+    target_lower = raw_addr.lower()
+
+    # 1. Try uppercase lookup (standard Home Assistant Bluetooth manager format)
     ble_device: BLEDevice | None = bluetooth.async_ble_device_from_address(
-        hass, address, connectable=True
+        hass, target_upper, connectable=True
     )
+
+    # 2. Try lowercase lookup
     if ble_device is None:
-        _LOGGER.debug("BLE device %s not currently found in HA Bluetooth cache", address)
-        raise ConfigEntryNotReady(f"Périphérique Bluetooth {address} non détecté pour le moment")
+        ble_device = bluetooth.async_ble_device_from_address(
+            hass, target_lower, connectable=True
+        )
+
+    # 3. Fallback: Search among currently discovered service info
+    if ble_device is None:
+        for disc in bluetooth.async_discovered_service_info(hass, connectable=True):
+            if disc.address.upper() == target_upper:
+                ble_device = disc.device
+                break
+
+    if ble_device is None:
+        _LOGGER.debug("BLE device %s not currently found in HA Bluetooth cache", target_upper)
+        raise ConfigEntryNotReady(f"Périphérique Bluetooth {target_upper} non détecté pour le moment")
 
     bms_class = await _resolve_bms_class(entry, ble_device, hass)
     keep_alive = entry.options.get(
@@ -119,6 +136,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
 
