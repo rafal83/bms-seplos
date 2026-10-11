@@ -76,8 +76,26 @@
       "heater_active": { "name": "Heater Active" },
       "has_problem": { "name": "Battery Alarm" }
     },
+    "switch": {
+      "chrg_mosfet": { "name": "Charge Switch" },
+      "dischrg_mosfet": { "name": "Discharge Switch" },
+      "balancer_active": { "name": "Active Balancer" }
+    },
+    "number": {
+      "cell_ovp": { "name": "Cell Overvoltage Protection" },
+      "cell_ovpr": { "name": "Cell Overvoltage Recovery" },
+      "cell_uvp": { "name": "Cell Undervoltage Protection" },
+      "cell_uvpr": { "name": "Cell Undervoltage Recovery" },
+      "pack_ovp": { "name": "Pack Overvoltage Protection" },
+      "pack_uvp": { "name": "Pack Undervoltage Protection" },
+      "charge_ocp": { "name": "Max Charge Current Limit" },
+      "discharge_ocp": { "name": "Max Discharge Current Limit" }
+    },
     "button": {
-      "update_now": { "name": "Force Update" }
+      "update_now": { "name": "Force Update" },
+      "zero_calibration": { "name": "Zero Current Calibration" },
+      "sync_clock": { "name": "Sync Clock" },
+      "reset_bms": { "name": "Reset BMS" }
     }
   }
 }

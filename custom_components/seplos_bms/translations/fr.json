@@ -76,8 +76,26 @@
       "heater_active": { "name": "Chauffage actif" },
       "has_problem": { "name": "Alarme batterie" }
     },
+    "switch": {
+      "chrg_mosfet": { "name": "Interrupteur Charge" },
+      "dischrg_mosfet": { "name": "Interrupteur Décharge" },
+      "balancer_active": { "name": "Équilibrage actif" }
+    },
+    "number": {
+      "cell_ovp": { "name": "Protection surtension cellule" },
+      "cell_ovpr": { "name": "Reprise surtension cellule" },
+      "cell_uvp": { "name": "Protection sous-tension cellule" },
+      "cell_uvpr": { "name": "Reprise sous-tension cellule" },
+      "pack_ovp": { "name": "Protection surtension pack" },
+      "pack_uvp": { "name": "Protection sous-tension pack" },
+      "charge_ocp": { "name": "Limite max courant de charge" },
+      "discharge_ocp": { "name": "Limite max courant de décharge" }
+    },
     "button": {
-      "update_now": { "name": "Actualiser maintenant" }
+      "update_now": { "name": "Actualiser maintenant" },
+      "zero_calibration": { "name": "Calibration zéro courant" },
+      "sync_clock": { "name": "Synchroniser l'horloge" },
+      "reset_bms": { "name": "Redémarrer le BMS" }
     }
   }
 }

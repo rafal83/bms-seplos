@@ -257,3 +257,101 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         data["has_problem"] = bool(problem_code)
 
         return data
+
+    async def async_write_modbus_register(self, reg_addr: int, value: int, device_id: int = 0x00) -> bool:
+        """Write a single 16-bit register using Modbus Function 0x06."""
+        # Frame: [device_id, 0x06, reg_high, reg_low, val_high, val_low, crc_low, crc_high]
+        payload = bytearray([device_id, 0x06])
+        payload.extend(reg_addr.to_bytes(2, "big"))
+        payload.extend(value.to_bytes(2, "big", signed=False))
+        from aiobmsble.basebms import crc_modbus
+        crc = crc_modbus(payload)
+        payload.extend(crc.to_bytes(2, "little"))
+
+        _LOGGER.debug(
+            "%s: Writing Modbus register 0x%04X = %s (0x%04X), frame: %s",
+            self.name,
+            reg_addr,
+            value,
+            value,
+            payload.hex(" "),
+        )
+        return await self._async_send_raw(bytes(payload))
+
+    async def async_write_v2_command(self, cmd: int, data: bytes = b"", address: int = 0x00) -> bool:
+        """Write a command using Seplos V2 ASCII protocol."""
+        # Seplos V2 frame format: [HEAD (~), CMD_VER (0x10), address, 0x46, cmd, len_high, len_low, ...data, crc_high, crc_low, TAIL (\r)]
+        from aiobmsble.basebms import crc_xmodem
+        frame = bytearray([0x7E, 0x10, address, 0x46, cmd])
+        frame.extend(len(data).to_bytes(2, "big", signed=False))
+        frame.extend(data)
+        crc = crc_xmodem(frame[1:])
+        frame.extend(crc.to_bytes(2, "big"))
+        frame.append(0x0D)
+
+        _LOGGER.debug(
+            "%s: Writing V2 command 0x%02X, frame: %s",
+            self.name,
+            cmd,
+            frame.hex(" "),
+        )
+        return await self._async_send_raw(bytes(frame))
+
+    async def async_set_switch(self, switch_key: str, state: bool) -> bool:
+        """Set state of a MOSFET or function switch."""
+        is_v2 = getattr(self._device, "uuid_tx", lambda: "fff2")() == "ff02"
+        _LOGGER.info(
+            "%s: Setting switch '%s' to %s (protocol: %s)",
+            self.name,
+            switch_key,
+            "ON" if state else "OFF",
+            "V2" if is_v2 else "V3",
+        )
+
+        if is_v2:
+            # Seplos V2: TeleCtrl CID2 = 0x47
+            # Byte 0 bit 0: Discharge, bit 1: Charge
+            bit_mask = 0x01 if switch_key == "dischrg_mosfet" else (0x02 if switch_key == "chrg_mosfet" else 0x04)
+            cmd_data = bytes([bit_mask if state else 0x00])
+            success = await self.async_write_v2_command(0x47, cmd_data)
+        else:
+            # Seplos V3: Write to SCA (0x150D offset) or coil control
+            # Using Modbus function 0x06
+            reg_map = {
+                "chrg_mosfet": 0x1510,
+                "dischrg_mosfet": 0x1511,
+                "balancer_active": 0x1512,
+            }
+            reg_addr = reg_map.get(switch_key, 0x1510)
+            val = 1 if state else 0
+            success = await self.async_write_modbus_register(reg_addr, val)
+
+        # Update local state immediately and request refresh
+        if self.data and switch_key in self.data:
+            self.data[switch_key] = state
+            if switch_key == "chrg_mosfet":
+                self.data["charging_allowed"] = state
+            elif switch_key == "dischrg_mosfet":
+                self.data["discharging_allowed"] = state
+            self.async_update_listeners()
+
+        self.hass.async_create_task(self.async_request_refresh())
+        return success
+
+    async def _async_send_raw(self, payload: bytes) -> bool:
+        """Safely send raw BLE frame holding op lock."""
+        try:
+            await self._device._connect()
+        except Exception as err:
+            _LOGGER.error("%s: Connect failed before sending command: %s", self.name, err)
+            return False
+
+        async with self._device._op_lock:
+            try:
+                tx_uuid = self._device.uuid_tx()
+                await self._device._client.write_gatt_char(tx_uuid, payload, response=False)
+                _LOGGER.debug("%s: BLE command sent successfully: %s", self.name, payload.hex(" "))
+                return True
+            except Exception as err:
+                _LOGGER.error("%s: Failed to send BLE command %s: %s", self.name, payload.hex(" "), err)
+                return False
