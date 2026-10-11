@@ -98,6 +98,12 @@ Cette intégration remplace et enrichit l'application mobile **BMS (`com.example
 4. Choisissez le protocole (**Auto** recommandé, ou forcez **Seplos V2** / **Seplos V3** selon votre matériel).
 5. Définissez l'intervalle d'actualisation souhaité (par défaut : 30 secondes).
 
+> [!WARNING]
+> **Connexion Bluetooth unique (Exclusivité) :**
+> Le BMS Seplos (comme la quasi-totalité des BMS BLE) n'accepte qu'**une seule connexion Bluetooth active à la fois**.
+> Si l'application mobile (**EN BMS / `com.example.bms_flutter`**) ou un téléphone reste connecté à la batterie, Home Assistant ne pourra pas s'y connecter et le contrôleur Bluetooth attendra en timeout, ce qui peut bloquer BlueZ.
+> **Fermez impérativement l'application mobile sur votre téléphone** pour laisser Home Assistant interroger la batterie.
+
 ---
 
 ## 🛠️ Dépannage et Logs

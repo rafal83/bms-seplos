@@ -28,6 +28,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Seplos BMS from a config entry."""
     coordinator = SeplosBMSCoordinator(hass, entry)
+    await coordinator.async_setup()
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator

@@ -234,14 +234,26 @@ class SeplosBMSOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        current_protocol = self.config_entry.options.get(
+            CONF_PROTOCOL,
+            self.config_entry.data.get(CONF_PROTOCOL, PROTOCOL_AUTO),
+        )
+        current_keep_alive = self.config_entry.options.get(
+            CONF_KEEP_ALIVE,
+            self.config_entry.data.get(CONF_KEEP_ALIVE, DEFAULT_KEEP_ALIVE),
+        )
+        current_scan_interval = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL,
+            self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        )
+
         schema = vol.Schema(
             {
+                vol.Optional(CONF_PROTOCOL, default=current_protocol): vol.In(PROTOCOLS),
+                vol.Optional(CONF_KEEP_ALIVE, default=current_keep_alive): bool,
                 vol.Optional(
                     CONF_SCAN_INTERVAL,
-                    default=self.config_entry.options.get(
-                        CONF_SCAN_INTERVAL,
-                        self.config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                    ),
+                    default=current_scan_interval,
                 ): vol.All(vol.Coerce(int), vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL)),
             }
         )

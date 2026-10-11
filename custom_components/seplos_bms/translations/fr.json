@@ -44,6 +44,8 @@
         "title": "Options Seplos BMS",
         "description": "Configurer les paramètres d'interrogation de la batterie.",
         "data": {
+          "protocol": "Protocole BMS (Auto / V2 ASCII / V3 Modbus)",
+          "keep_alive": "Maintenir la connexion Bluetooth active (Keep-alive, évite de reconnecter à chaque cycle)",
           "scan_interval": "Intervalle d'actualisation (secondes)"
         }
       }

@@ -44,6 +44,8 @@
         "title": "Seplos BMS Options",
         "description": "Configure battery polling settings.",
         "data": {
+          "protocol": "BMS Protocol (Auto / V2 ASCII / V3 Modbus)",
+          "keep_alive": "Keep Bluetooth connection active (Keep-alive, avoids reconnecting every cycle)",
           "scan_interval": "Update Interval (seconds)"
         }
       }

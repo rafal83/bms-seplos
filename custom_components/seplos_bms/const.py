@@ -8,9 +8,11 @@ CONF_ADDRESS: Final = "address"
 CONF_NAME: Final = "name"
 CONF_PROTOCOL: Final = "protocol"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
+CONF_KEEP_ALIVE: Final = "keep_alive"
 
 DEFAULT_NAME: Final = "Seplos BMS"
 DEFAULT_SCAN_INTERVAL: Final = 30  # seconds
+DEFAULT_KEEP_ALIVE: Final = True
 MIN_SCAN_INTERVAL: Final = 5
 MAX_SCAN_INTERVAL: Final = 300
 
