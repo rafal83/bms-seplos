@@ -1,7 +1,17 @@
-# Intégration Home Assistant HACS - Seplos BMS (Bluetooth / BLE)
+<p align="center">
+  <img src="images/logo.png" alt="Seplos BMS Logo" width="130">
+</p>
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)](https://www.home-assistant.io/)
+<h1 align="center">Seplos BMS (Bluetooth / BLE)</h1>
+<p align="center">
+  <b>Intégration Home Assistant (HACS) pour batteries BMS Seplos (compatible application EN BMS / <code>com.example.bms_flutter</code>)</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/hacs/default"><img src="https://img.shields.io/badge/HACS-Custom-orange.svg" alt="HACS"></a>
+  <a href="https://www.home-assistant.io/"><img src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg" alt="Home Assistant"></a>
+  <a href="https://github.com/rafal83/bms-seplos/releases"><img src="https://img.shields.io/github/v/release/rafal83/bms-seplos?color=blue" alt="Release"></a>
+</p>
 
 Intégration personnalisée Home Assistant (compatible **HACS**) pour gérer et surveiller votre batterie équipée d'un **BMS Seplos** en Bluetooth Low Energy (BLE).
 
