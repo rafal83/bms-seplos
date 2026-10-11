@@ -1,0 +1,82 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Seplos BMS (Bluetooth)",
+        "description": "Select a discovered Seplos BMS or choose manual entry.",
+        "data": {
+          "address": "Bluetooth Device",
+          "protocol": "BMS Protocol",
+          "scan_interval": "Update Interval (seconds)"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Discovered Seplos BMS",
+        "description": "Do you want to configure Seplos BMS `{name}` ({address})?",
+        "data": {
+          "protocol": "BMS Protocol",
+          "scan_interval": "Update Interval (seconds)"
+        }
+      },
+      "manual": {
+        "title": "Manual Seplos BMS Setup",
+        "description": "Enter the Bluetooth MAC address of your Seplos BMS.",
+        "data": {
+          "address": "Bluetooth MAC Address (e.g. AA:BB:CC:DD:EE:FF)",
+          "name": "Device Name",
+          "protocol": "BMS Protocol",
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to BMS.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This device is already configured in Home Assistant.",
+      "no_devices_found": "No Seplos BMS found nearby."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Seplos BMS Options",
+        "description": "Configure battery polling settings.",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "voltage": { "name": "Total Voltage" },
+      "current": { "name": "Current" },
+      "power": { "name": "Power" },
+      "battery_level": { "name": "Battery Level (SOC)" },
+      "battery_health": { "name": "State of Health (SOH)" },
+      "design_capacity": { "name": "Design Capacity" },
+      "cycle_charge": { "name": "Remaining Capacity" },
+      "cycles": { "name": "Cycles" },
+      "temperature": { "name": "Average Temperature" },
+      "min_cell_voltage": { "name": "Min Cell Voltage" },
+      "max_cell_voltage": { "name": "Max Cell Voltage" },
+      "cell_voltage_delta": { "name": "Cell Voltage Delta" },
+      "min_cell_number": { "name": "Min Cell Number" },
+      "max_cell_number": { "name": "Max Cell Number" },
+      "cell_count": { "name": "Cell Count" }
+    },
+    "binary_sensor": {
+      "charging_allowed": { "name": "Charging Allowed" },
+      "discharging_allowed": { "name": "Discharging Allowed" },
+      "balancer_active": { "name": "Balancer Active" },
+      "heater_active": { "name": "Heater Active" },
+      "has_problem": { "name": "Battery Alarm" }
+    },
+    "button": {
+      "update_now": { "name": "Force Update" }
+    }
+  }
+}
+

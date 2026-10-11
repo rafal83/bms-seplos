@@ -1,0 +1,82 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connecter un Seplos BMS (Bluetooth)",
+        "description": "Sélectionnez un BMS Seplos détecté ou choisissez la saisie manuelle.",
+        "data": {
+          "address": "Appareil Bluetooth",
+          "protocol": "Protocole BMS",
+          "scan_interval": "Intervalle d'actualisation (secondes)"
+        }
+      },
+      "bluetooth_confirm": {
+        "title": "Découverte Seplos BMS",
+        "description": "Voulez-vous configurer le BMS Seplos `{name}` ({address}) ?",
+        "data": {
+          "protocol": "Protocole BMS",
+          "scan_interval": "Intervalle d'actualisation (secondes)"
+        }
+      },
+      "manual": {
+        "title": "Saisie manuelle Seplos BMS",
+        "description": "Entrez l'adresse MAC Bluetooth de votre BMS Seplos.",
+        "data": {
+          "address": "Adresse MAC Bluetooth (ex: AA:BB:CC:DD:EE:FF)",
+          "name": "Nom de l'appareil",
+          "protocol": "Protocole BMS",
+          "scan_interval": "Intervalle d'actualisation (secondes)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter au BMS.",
+      "unknown": "Une erreur inattendue est survenue."
+    },
+    "abort": {
+      "already_configured": "Cet appareil est déjà configuré dans Home Assistant.",
+      "no_devices_found": "Aucun BMS Seplos n'a été détecté à proximité."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options Seplos BMS",
+        "description": "Configurer les paramètres d'interrogation de la batterie.",
+        "data": {
+          "scan_interval": "Intervalle d'actualisation (secondes)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "voltage": { "name": "Tension totale" },
+      "current": { "name": "Courant" },
+      "power": { "name": "Puissance" },
+      "battery_level": { "name": "Niveau de batterie (SOC)" },
+      "battery_health": { "name": "Santé de la batterie (SOH)" },
+      "design_capacity": { "name": "Capacité nominale" },
+      "cycle_charge": { "name": "Capacité restante" },
+      "cycles": { "name": "Cycles de charge" },
+      "temperature": { "name": "Température moyenne" },
+      "min_cell_voltage": { "name": "Tension cellule min" },
+      "max_cell_voltage": { "name": "Tension cellule max" },
+      "cell_voltage_delta": { "name": "Écart de tension cellules" },
+      "min_cell_number": { "name": "Numéro cellule min" },
+      "max_cell_number": { "name": "Numéro cellule max" },
+      "cell_count": { "name": "Nombre de cellules" }
+    },
+    "binary_sensor": {
+      "charging_allowed": { "name": "Charge autorisée" },
+      "discharging_allowed": { "name": "Décharge autorisée" },
+      "balancer_active": { "name": "Équilibrage actif" },
+      "heater_active": { "name": "Chauffage actif" },
+      "has_problem": { "name": "Alarme batterie" }
+    },
+    "button": {
+      "update_now": { "name": "Actualiser maintenant" }
+    }
+  }
+}
+

@@ -1,0 +1,42 @@
+{
+  "domain": "seplos_bms",
+  "name": "Seplos BMS (Bluetooth)",
+  "codeowners": ["@rafal83"],
+  "config_flow": true,
+  "dependencies": ["bluetooth"],
+  "documentation": "https://github.com/rafal83/bms-seplos",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "requirements": [
+    "aiobmsble>=0.29.0",
+    "bleak-retry-connector>=3.0.0"
+  ],
+  "bluetooth": [
+    {
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP*"
+    },
+    {
+      "local_name": "BP*"
+    },
+    {
+      "local_name": "XZHX*"
+    },
+    {
+      "local_name": "CSY*"
+    },
+    {
+      "local_name": "ST*"
+    },
+    {
+      "local_name": "SmartBat*"
+    }
+  ],
+  "version": "1.0.0"
+}
+
