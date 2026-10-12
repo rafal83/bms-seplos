@@ -62,6 +62,13 @@
       "cycle_charge": { "name": "Capacité restante" },
       "cycles": { "name": "Cycles de charge" },
       "temperature": { "name": "Température moyenne" },
+      "temp_cell_1": { "name": "Température cellule 1" },
+      "temp_cell_2": { "name": "Température cellule 2" },
+      "temp_cell_3": { "name": "Température cellule 3" },
+      "temp_cell_4": { "name": "Température cellule 4" },
+      "temp_ambient": { "name": "Température ambiante" },
+      "temp_mosfet": { "name": "Température MOSFET" },
+      "bus_voltage": { "name": "Tension Bus" },
       "min_cell_voltage": { "name": "Tension cellule min" },
       "max_cell_voltage": { "name": "Tension cellule max" },
       "cell_voltage_delta": { "name": "Écart de tension cellules" },
@@ -74,12 +81,21 @@
       "discharging_allowed": { "name": "Décharge autorisée" },
       "balancer_active": { "name": "Équilibrage actif" },
       "heater_active": { "name": "Chauffage actif" },
-      "has_problem": { "name": "Alarme batterie" }
+      "has_problem": { "name": "Alarme batterie générale" },
+      "alarm_voltage_low": { "name": "Alarme sous-tension" },
+      "alarm_voltage_high": { "name": "Alarme surtension" },
+      "alarm_temp_low": { "name": "Alarme basse température" },
+      "alarm_temp_high": { "name": "Alarme haute température" },
+      "alarm_charge_overcurrent": { "name": "Alarme surintensité charge" },
+      "alarm_discharge_overcurrent": { "name": "Alarme surintensité décharge" },
+      "alarm_cell_imbalance": { "name": "Alarme déséquilibre cellules" },
+      "alarm_short_circuit": { "name": "Alarme court-circuit" }
     },
     "switch": {
       "chrg_mosfet": { "name": "Interrupteur Charge" },
       "dischrg_mosfet": { "name": "Interrupteur Décharge" },
-      "balancer_active": { "name": "Équilibrage actif" }
+      "balancer_active": { "name": "Équilibrage actif" },
+      "heater_active": { "name": "Chauffage batterie" }
     },
     "number": {
       "cell_ovp": { "name": "Protection surtension cellule" },
@@ -89,7 +105,20 @@
       "pack_ovp": { "name": "Protection surtension pack" },
       "pack_uvp": { "name": "Protection sous-tension pack" },
       "charge_ocp": { "name": "Limite max courant de charge" },
-      "discharge_ocp": { "name": "Limite max courant de décharge" }
+      "discharge_ocp": { "name": "Limite max courant de décharge" },
+      "rated_capacity": { "name": "Capacité nominale batterie" },
+      "equalization_opening_voltage": { "name": "Tension début équilibrage" },
+      "equalization_opening_delta": { "name": "Écart début équilibrage" },
+      "charge_temp_high_alarm": { "name": "Alarme haute température charge" },
+      "charge_temp_high_protect": { "name": "Protection haute température charge" },
+      "charge_temp_low_protect": { "name": "Protection basse température charge" },
+      "discharge_temp_high_protect": { "name": "Protection haute température décharge" },
+      "discharge_temp_low_protect": { "name": "Protection basse température décharge" },
+      "cell_heating_temp": { "name": "Seuil démarrage chauffage cellule" }
+    },
+    "select": {
+      "can_protocol": { "name": "Protocole CAN Onduleur" },
+      "rs485_protocol": { "name": "Protocole RS485 Onduleur" }
     },
     "button": {
       "update_now": { "name": "Actualiser maintenant" },

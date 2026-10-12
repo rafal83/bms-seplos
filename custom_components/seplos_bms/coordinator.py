@@ -230,21 +230,49 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 data["max_cell_number"] = valid_cells.index(max_v) + 1
             data["cell_count"] = len(cell_voltages)
 
-        # Températures
+        # Températures détaillées
         temp_values = data.get("temp_values")
         if isinstance(temp_values, list) and temp_values:
             temps: list[float] = []
-            for t in temp_values:
-                if isinstance(t, (int, float)):
-                    temps.append(float(t))
-                elif hasattr(t, "value"):
-                    temps.append(float(t.value))
+            for idx, t in enumerate(temp_values):
+                val: float | None = None
+                sensor_type = None
+                if hasattr(t, "value"):
+                    val = round(float(t.value), 1)
+                    sensor_type = getattr(t, "type", None)
+                elif isinstance(t, (int, float)):
+                    val = round(float(t), 1)
                 elif isinstance(t, dict) and "value" in t:
-                    temps.append(float(t["value"]))
+                    val = round(float(t["value"]), 1)
+
+                if val is not None:
+                    # Enregistrer par capteur individuel
+                    # Convention Seplos : 4 premiers = sondes cellules T1..T4, puis T_ambiante, puis T_mosfet
+                    if idx == 0:
+                        data["temp_cell_1"] = val
+                    elif idx == 1:
+                        data["temp_cell_2"] = val
+                    elif idx == 2:
+                        data["temp_cell_3"] = val
+                    elif idx == 3:
+                        data["temp_cell_4"] = val
+                    elif idx == 4 or (sensor_type and getattr(sensor_type, "name", "") == "AMBIENT"):
+                        data["temp_ambient"] = val
+                    elif idx == 5 or (sensor_type and getattr(sensor_type, "name", "") == "MOSFET"):
+                        data["temp_mosfet"] = val
+
+                    # Pour les sondes cellules (les 4 premières ou type CELL)
+                    if idx < 4:
+                        temps.append(val)
+
             if temps:
                 data["temp_cell_min"] = min(temps)
                 data["temp_cell_max"] = max(temps)
                 data["temp_cell_avg"] = round(sum(temps) / len(temps), 1)
+
+        # Tension Bus (Bus Voltage)
+        if "bus_voltage" not in data or data["bus_voltage"] is None:
+            data["bus_voltage"] = data.get("voltage")
 
         # États binaires
         data["charging_allowed"] = data.get("chrg_mosfet", False)
@@ -252,9 +280,17 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         data["balancer_active"] = bool(data.get("balancer", 0))
         data["heater_active"] = bool(data.get("heater", False))
 
-        # Alarme / Problème
+        # Alarme générale & alarmes binaires détaillées
         problem_code = data.get("problem_code", 0)
         data["has_problem"] = bool(problem_code)
+        data["alarm_voltage_low"] = bool(problem_code & 0x0001)
+        data["alarm_voltage_high"] = bool(problem_code & 0x0002)
+        data["alarm_temp_low"] = bool(problem_code & 0x0004)
+        data["alarm_temp_high"] = bool(problem_code & 0x0008)
+        data["alarm_charge_overcurrent"] = bool(problem_code & 0x0010)
+        data["alarm_discharge_overcurrent"] = bool(problem_code & 0x0020)
+        data["alarm_cell_imbalance"] = bool(problem_code & 0x0040)
+        data["alarm_short_circuit"] = bool(problem_code & 0x0080)
 
         return data
 
@@ -310,8 +346,12 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         if is_v2:
             # Seplos V2: TeleCtrl CID2 = 0x47
-            # Byte 0 bit 0: Discharge, bit 1: Charge
-            bit_mask = 0x01 if switch_key == "dischrg_mosfet" else (0x02 if switch_key == "chrg_mosfet" else 0x04)
+            # Byte 0 bit 0: Discharge, bit 1: Charge, bit 3: Heater
+            bit_mask = 0x01 if switch_key == "dischrg_mosfet" else (
+                0x02 if switch_key == "chrg_mosfet" else (
+                    0x08 if switch_key == "heater_active" else 0x04
+                )
+            )
             cmd_data = bytes([bit_mask if state else 0x00])
             success = await self.async_write_v2_command(0x47, cmd_data)
         else:
@@ -321,6 +361,7 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "chrg_mosfet": 0x1510,
                 "dischrg_mosfet": 0x1511,
                 "balancer_active": 0x1512,
+                "heater_active": 0x1513,
             }
             reg_addr = reg_map.get(switch_key, 0x1510)
             val = 1 if state else 0
@@ -333,6 +374,8 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.data["charging_allowed"] = state
             elif switch_key == "dischrg_mosfet":
                 self.data["discharging_allowed"] = state
+            elif switch_key == "heater_active":
+                self.data["heater_active"] = state
             self.async_update_listeners()
 
         self.hass.async_create_task(self.async_request_refresh())

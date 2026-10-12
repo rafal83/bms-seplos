@@ -62,6 +62,13 @@
       "cycle_charge": { "name": "Remaining Capacity" },
       "cycles": { "name": "Cycles" },
       "temperature": { "name": "Average Temperature" },
+      "temp_cell_1": { "name": "Cell Temperature 1" },
+      "temp_cell_2": { "name": "Cell Temperature 2" },
+      "temp_cell_3": { "name": "Cell Temperature 3" },
+      "temp_cell_4": { "name": "Cell Temperature 4" },
+      "temp_ambient": { "name": "Ambient Temperature" },
+      "temp_mosfet": { "name": "MOSFET Temperature" },
+      "bus_voltage": { "name": "Bus Voltage" },
       "min_cell_voltage": { "name": "Min Cell Voltage" },
       "max_cell_voltage": { "name": "Max Cell Voltage" },
       "cell_voltage_delta": { "name": "Cell Voltage Delta" },
@@ -74,12 +81,21 @@
       "discharging_allowed": { "name": "Discharging Allowed" },
       "balancer_active": { "name": "Balancer Active" },
       "heater_active": { "name": "Heater Active" },
-      "has_problem": { "name": "Battery Alarm" }
+      "has_problem": { "name": "General Battery Alarm" },
+      "alarm_voltage_low": { "name": "Voltage Low Alarm" },
+      "alarm_voltage_high": { "name": "Voltage High Alarm" },
+      "alarm_temp_low": { "name": "Temperature Low Alarm" },
+      "alarm_temp_high": { "name": "Temperature High Alarm" },
+      "alarm_charge_overcurrent": { "name": "Charge Overcurrent Alarm" },
+      "alarm_discharge_overcurrent": { "name": "Discharge Overcurrent Alarm" },
+      "alarm_cell_imbalance": { "name": "Cell Imbalance Alarm" },
+      "alarm_short_circuit": { "name": "Short Circuit Alarm" }
     },
     "switch": {
       "chrg_mosfet": { "name": "Charge Switch" },
       "dischrg_mosfet": { "name": "Discharge Switch" },
-      "balancer_active": { "name": "Active Balancer" }
+      "balancer_active": { "name": "Active Balancer" },
+      "heater_active": { "name": "Battery Heater" }
     },
     "number": {
       "cell_ovp": { "name": "Cell Overvoltage Protection" },
@@ -89,7 +105,20 @@
       "pack_ovp": { "name": "Pack Overvoltage Protection" },
       "pack_uvp": { "name": "Pack Undervoltage Protection" },
       "charge_ocp": { "name": "Max Charge Current Limit" },
-      "discharge_ocp": { "name": "Max Discharge Current Limit" }
+      "discharge_ocp": { "name": "Max Discharge Current Limit" },
+      "rated_capacity": { "name": "Battery Rated Capacity" },
+      "equalization_opening_voltage": { "name": "Equalization Start Voltage" },
+      "equalization_opening_delta": { "name": "Equalization Start Delta" },
+      "charge_temp_high_alarm": { "name": "Charge High Temp Alarm" },
+      "charge_temp_high_protect": { "name": "Charge High Temp Protection" },
+      "charge_temp_low_protect": { "name": "Charge Low Temp Protection" },
+      "discharge_temp_high_protect": { "name": "Discharge High Temp Protection" },
+      "discharge_temp_low_protect": { "name": "Discharge Low Temp Protection" },
+      "cell_heating_temp": { "name": "Cell Heating Start Temp" }
+    },
+    "select": {
+      "can_protocol": { "name": "Inverter CAN Protocol" },
+      "rs485_protocol": { "name": "Inverter RS485 Protocol" }
     },
     "button": {
       "update_now": { "name": "Force Update" },

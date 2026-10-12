@@ -38,6 +38,12 @@ SWITCH_TYPES: tuple[dict[str, Any], ...] = (
         "icon": "mdi:scale-balance",
         "device_class": SwitchDeviceClass.SWITCH,
     },
+    {
+        "key": "heater_active",
+        "name": "Chauffage batterie (Heater)",
+        "icon": "mdi:radiator",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
 )
 
 
