@@ -381,6 +381,46 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.async_create_task(self.async_request_refresh())
         return success
 
+    async def async_set_bit_param(self, byte_idx: int, bit_idx: int, state: bool, key: str) -> bool:
+        """Set a configuration function switch / bit parameter in BMS."""
+        is_v2 = getattr(self._device, "uuid_tx", lambda: "fff2")() == "ff02"
+        _LOGGER.info(
+            "%s: Setting bit param '%s' (Byte %s, Bit %s) to %s",
+            self.name,
+            key,
+            byte_idx,
+            bit_idx,
+            "ON" if state else "OFF",
+        )
+
+        if is_v2:
+            # Seplos V2: CID2_SetPara (0x49) or Bit Param command
+            # data: [byte_idx, bit_idx, 1 if state else 0]
+            val = 1 if state else 0
+            cmd_data = bytes([byte_idx, bit_idx, val])
+            success = await self.async_write_v2_command(0x49, cmd_data)
+        else:
+            # Seplos V3: SFA Coils / Holding register at 0x1400
+            # Function 0x05 (Write Single Coil) or 0x06 (Write Register)
+            # Address for bit: 0x1400 + byte_idx * 8 + bit_idx
+            reg_addr = 0x1400 + (byte_idx * 8) + bit_idx
+            val = 0xFF00 if state else 0x0000  # standard Modbus coil write
+            # Send using function 0x05
+            payload = bytearray([0x00, 0x05])
+            payload.extend(reg_addr.to_bytes(2, "big"))
+            payload.extend(val.to_bytes(2, "big"))
+            from aiobmsble.basebms import crc_modbus
+            crc = crc_modbus(payload)
+            payload.extend(crc.to_bytes(2, "little"))
+            success = await self._async_send_raw(bytes(payload))
+
+        if self.data is not None:
+            self.data[key] = state
+            self.async_update_listeners()
+
+        self.hass.async_create_task(self.async_request_refresh())
+        return success
+
     async def _async_send_raw(self, payload: bytes) -> bool:
         """Safely send raw BLE frame holding op lock."""
         try:

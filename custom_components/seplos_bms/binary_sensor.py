@@ -36,7 +36,7 @@ BINARY_SENSORS: tuple[SeplosBinarySensorEntityDescription, ...] = (
         key="charging_allowed",
         translation_key="charging_allowed",
         name="Charge autorisée (Charge MOSFET)",
-        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
+        icon="mdi:battery-charging",
         is_on_fn=lambda data: data.get("charging_allowed"),
     ),
     SeplosBinarySensorEntityDescription(
