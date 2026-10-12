@@ -141,3 +141,4 @@ class SeplosBMSProtocolSelect(
                 self.coordinator.data[self._key] = option
             self.async_write_ha_state()
             self.hass.async_create_task(self.coordinator.async_request_refresh())
+
