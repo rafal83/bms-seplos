@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections import deque
 from datetime import timedelta
 from itertools import islice
@@ -54,6 +55,8 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mac = ble_device.address
         self._stale: bool = False
         self._link_q: deque[bool] = deque([False], maxlen=100)
+        self._cached_params: dict[str, Any] = {}
+        self._params_loaded: bool = False
 
         scan_interval = entry.options.get(
             CONF_SCAN_INTERVAL,
@@ -94,6 +97,10 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def link_quality(self) -> int:
         """Return percentage of successful BMS reads out of the last 100 attempts."""
         return self._link_q.count(True) * 100 // len(self._link_q)
+
+    def invalidate_param_cache(self) -> None:
+        """Invalidate parameter cache to force re-reading from BMS on next update."""
+        self._params_loaded = False
 
     def _device_stale(self) -> bool:
         """Check if the connection has become stale and needs a clean reset."""
@@ -192,6 +199,30 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._link_q[-1] = True  # Mark this attempt as successful
 
         processed = self._process_sample(raw_sample)
+
+        # Fusionner les paramètres de configuration déjà en cache
+        processed.update(self._cached_params)
+
+        # Lire la configuration réelle (SFA et SPA) directement depuis le BMS si pas encore chargée
+        if not self._params_loaded:
+            try:
+                bms_params = await self._async_fetch_bms_parameters()
+                if bms_params:
+                    self._cached_params.update(bms_params)
+                    processed.update(bms_params)
+                    self._params_loaded = True
+                    _LOGGER.info(
+                        "%s: Configuration réelle chargée depuis la mémoire du BMS (%d paramètres)",
+                        self.name,
+                        len(bms_params),
+                    )
+            except Exception as err:
+                _LOGGER.warning(
+                    "%s: Impossible de lire la configuration du BMS au démarrage: %s",
+                    self.name,
+                    err,
+                )
+
         _LOGGER.debug("%s: BMS data update successful: %s", self.name, processed)
         return processed
 
@@ -381,45 +412,197 @@ class SeplosBMSCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.hass.async_create_task(self.async_request_refresh())
         return success
 
-    async def async_set_bit_param(self, byte_idx: int, bit_idx: int, state: bool, key: str) -> bool:
+    async def async_set_bit_param(
+        self,
+        coil_addr: int,
+        state: bool,
+        key: str,
+        v2_byte_idx: int = 0,
+        v2_bit_idx: int = 0,
+    ) -> bool:
         """Set a configuration function switch / bit parameter in BMS."""
         is_v2 = getattr(self._device, "uuid_tx", lambda: "fff2")() == "ff02"
         _LOGGER.info(
-            "%s: Setting bit param '%s' (Byte %s, Bit %s) to %s",
+            "%s: Setting function switch '%s' (coil 0x%04X) to %s",
             self.name,
             key,
-            byte_idx,
-            bit_idx,
+            coil_addr,
             "ON" if state else "OFF",
         )
 
         if is_v2:
-            # Seplos V2: CID2_SetPara (0x49) or Bit Param command
-            # data: [byte_idx, bit_idx, 1 if state else 0]
+            # Seplos V2: CID2_SetPara (0x49)
             val = 1 if state else 0
-            cmd_data = bytes([byte_idx, bit_idx, val])
+            cmd_data = bytes([v2_byte_idx, v2_bit_idx, val])
             success = await self.async_write_v2_command(0x49, cmd_data)
         else:
-            # Seplos V3: SFA Coils / Holding register at 0x1400
-            # Function 0x05 (Write Single Coil) or 0x06 (Write Register)
-            # Address for bit: 0x1400 + byte_idx * 8 + bit_idx
-            reg_addr = 0x1400 + (byte_idx * 8) + bit_idx
-            val = 0xFF00 if state else 0x0000  # standard Modbus coil write
-            # Send using function 0x05
+            # Seplos V3: Write Single Coil (0x05) to coil_addr
+            val = 0xFF00 if state else 0x0000
             payload = bytearray([0x00, 0x05])
-            payload.extend(reg_addr.to_bytes(2, "big"))
+            payload.extend(coil_addr.to_bytes(2, "big"))
             payload.extend(val.to_bytes(2, "big"))
             from aiobmsble.basebms import crc_modbus
             crc = crc_modbus(payload)
             payload.extend(crc.to_bytes(2, "little"))
             success = await self._async_send_raw(bytes(payload))
 
-        if self.data is not None:
-            self.data[key] = state
+        if success:
+            self._cached_params[key] = state
+            if self.data is not None:
+                self.data[key] = state
             self.async_update_listeners()
 
-        self.hass.async_create_task(self.async_request_refresh())
         return success
+
+    async def async_send_modbus_query(
+        self,
+        query_frame: bytes,
+        expected_func: int,
+        timeout: float = 3.5,
+    ) -> bytes | None:
+        """Send a Modbus query and wait for the response frame holding BLE op lock."""
+        if not self._device.is_connected:
+            try:
+                await self._device._connect()
+            except Exception as err:
+                _LOGGER.warning("%s: Non connecté pour envoyer la requête: %s", self.name, err)
+                return None
+
+        async with self._device._op_lock:
+            rx_buf = bytearray()
+            rx_done = asyncio.Event()
+            orig_handler = self._device._notification_handler
+
+            def temp_handler(sender: Any, data: bytearray | bytes) -> None:
+                rx_buf.extend(data)
+                # Format réponse Modbus : [slave, func, byte_count, ...data, crc_l, crc_h]
+                if len(rx_buf) >= 3:
+                    if rx_buf[1] == expected_func:
+                        byte_count = rx_buf[2]
+                        expected_len = byte_count + 5  # slave(1) + func(1) + count(1) + data + crc(2)
+                        if len(rx_buf) >= expected_len:
+                            rx_done.set()
+                    elif rx_buf[1] & 0x80:
+                        # Trame d'erreur Modbus : [slave, func | 0x80, err_code, crc_l, crc_h]
+                        if len(rx_buf) >= 5:
+                            rx_done.set()
+
+            self._device._notification_handler = temp_handler
+            try:
+                tx_uuid = self._device.uuid_tx()
+                await self._device._client.write_gatt_char(tx_uuid, query_frame, response=False)
+                await asyncio.wait_for(rx_done.wait(), timeout=timeout)
+            except TimeoutError:
+                _LOGGER.debug("%s: Timeout requête Modbus: %s", self.name, query_frame.hex(" "))
+                return None
+            except Exception as err:
+                _LOGGER.debug("%s: Erreur envoi requête Modbus %s: %s", self.name, query_frame.hex(" "), err)
+                return None
+            finally:
+                self._device._notification_handler = orig_handler
+
+            # Valider la trame reçue
+            if len(rx_buf) >= 5 and rx_buf[1] == expected_func:
+                from aiobmsble.basebms import crc_modbus
+                expected_len = rx_buf[2] + 5
+                frame = bytes(rx_buf[:expected_len])
+                calc_crc = crc_modbus(frame[:-2])
+                resp_crc = int.from_bytes(frame[-2:], "little")
+                if calc_crc == resp_crc:
+                    return frame
+                _LOGGER.warning("%s: Erreur CRC Modbus reçu", self.name)
+            return None
+
+    async def _async_fetch_bms_parameters(self) -> dict[str, Any]:
+        """Read configuration parameters & function switches directly from BMS memory."""
+        is_v2 = getattr(self._device, "uuid_tx", lambda: "fff2")() == "ff02"
+        params: dict[str, Any] = {}
+
+        if is_v2:
+            return params
+
+        # Pour Seplos V3 Modbus RTU
+        _LOGGER.debug("%s: Lecture des tables SFA et SPA du BMS...", self.name)
+        from aiobmsble.basebms import crc_modbus
+
+        # 1. Lecture SFA (Coils à l'adresse 0x1400, 80 bobines = 10 octets)
+        sfa_query = bytearray([0x00, 0x01, 0x14, 0x00, 0x00, 0x50])
+        sfa_query.extend(crc_modbus(sfa_query).to_bytes(2, "little"))
+        sfa_resp = await self.async_send_modbus_query(bytes(sfa_query), expected_func=0x01, timeout=3.0)
+
+        if sfa_resp and len(sfa_resp) >= 15:
+            coil_data = sfa_resp[3:13]
+            _LOGGER.debug("%s: Bobines SFA lues: %s", self.name, coil_data.hex(" "))
+            from .switch import FUNCTION_SWITCHES
+
+            for desc in FUNCTION_SWITCHES:
+                if desc.is_bit_param:
+                    offset = desc.coil_addr - 0x1400
+                    if 0 <= offset < len(coil_data) * 8:
+                        byte_pos = offset // 8
+                        bit_pos = offset % 8
+                        is_active = bool(coil_data[byte_pos] & (1 << bit_pos))
+                        params[desc.key] = is_active
+
+        # 2. Lecture SPA Bloc 1 (0x1300, 32 registres : tensions et courants)
+        spa1_query = bytearray([0x00, 0x04, 0x13, 0x00, 0x00, 0x20])
+        spa1_query.extend(crc_modbus(spa1_query).to_bytes(2, "little"))
+        spa1_resp = await self.async_send_modbus_query(bytes(spa1_query), expected_func=0x04, timeout=3.0)
+        if not spa1_resp:
+            spa1_query[1] = 0x03
+            spa1_query[6:] = crc_modbus(spa1_query[:6]).to_bytes(2, "little")
+            spa1_resp = await self.async_send_modbus_query(bytes(spa1_query), expected_func=0x03, timeout=3.0)
+
+        func_code = spa1_resp[1] if spa1_resp else 0x04
+        if spa1_resp and len(spa1_resp) >= 69:
+            spa1_data = spa1_resp[3:-2]
+            def get_u16(offset: int) -> int:
+                idx = offset * 2
+                return int.from_bytes(spa1_data[idx:idx + 2], "big", signed=False)
+
+            params["pack_ovp"] = round(get_u16(0x05) * 0.01, 2)
+            params["pack_uvp"] = round(get_u16(0x09) * 0.01, 2)
+            params["cell_ovpr"] = round(get_u16(0x0C) * 0.001, 3)
+            params["cell_ovp"] = round(get_u16(0x0D) * 0.001, 3)
+            params["cell_uvpr"] = round(get_u16(0x10) * 0.001, 3)
+            params["cell_uvp"] = round(get_u16(0x11) * 0.001, 3)
+            params["charge_ocp"] = round(get_u16(0x17) * 0.01, 1)
+            params["discharge_ocp"] = round(get_u16(0x1D) * 0.01, 1)
+
+        # 3. Lecture SPA Bloc 2 (0x1330, 30 registres : températures)
+        spa2_query = bytearray([0x00, func_code, 0x13, 0x30, 0x00, 0x1E])
+        spa2_query.extend(crc_modbus(spa2_query).to_bytes(2, "little"))
+        spa2_resp = await self.async_send_modbus_query(bytes(spa2_query), expected_func=func_code, timeout=3.0)
+
+        if spa2_resp and len(spa2_resp) >= 65:
+            spa2_data = spa2_resp[3:-2]
+            def get_s16(offset: int) -> int:
+                idx = offset * 2
+                return int.from_bytes(spa2_data[idx:idx + 2], "big", signed=True)
+
+            params["charge_temp_high_alarm"] = round(get_s16(0x00) * 0.1, 1)
+            params["charge_temp_high_protect"] = round(get_s16(0x02) * 0.1, 1)
+            params["charge_temp_low_protect"] = round(get_s16(0x06) * 0.1, 1)
+            params["discharge_temp_high_protect"] = round(get_s16(0x0A) * 0.1, 1)
+            params["discharge_temp_low_protect"] = round(get_s16(0x0E) * 0.1, 1)
+            params["cell_heating_temp"] = round(get_s16(0x1C) * 0.1, 1)
+
+        # 4. Lecture SPA Bloc 3 (0x1350, 10 registres : équilibrage et capacité)
+        spa3_query = bytearray([0x00, func_code, 0x13, 0x50, 0x00, 0x0A])
+        spa3_query.extend(crc_modbus(spa3_query).to_bytes(2, "little"))
+        spa3_resp = await self.async_send_modbus_query(bytes(spa3_query), expected_func=func_code, timeout=3.0)
+
+        if spa3_resp and len(spa3_resp) >= 25:
+            spa3_data = spa3_resp[3:-2]
+            def get_u16_3(offset: int) -> int:
+                idx = offset * 2
+                return int.from_bytes(spa3_data[idx:idx + 2], "big", signed=False)
+
+            params["equalization_opening_voltage"] = round(get_u16_3(0x00) * 0.001, 3)
+            params["equalization_opening_delta"] = round(get_u16_3(0x01) * 1.0, 0)
+            params["rated_capacity"] = round(get_u16_3(0x08) * 0.01, 1)
+
+        return params
 
     async def _async_send_raw(self, payload: bytes) -> bool:
         """Safely send raw BLE frame holding op lock."""

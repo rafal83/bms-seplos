@@ -29,8 +29,9 @@ class SeplosBMSSwitchDescription:
     name: str
     icon: str
     is_bit_param: bool = False
-    byte_idx: int = 0
-    bit_idx: int = 0
+    coil_addr: int = 0x1400
+    v2_byte_idx: int = 0
+    v2_bit_idx: int = 0
     default_on: bool = True
 
 
@@ -64,193 +65,216 @@ MOSFET_SWITCHES: tuple[SeplosBMSSwitchDescription, ...] = (
 
 # Configuration Function Switches (Activer / Désactiver les alarmes et protections)
 FUNCTION_SWITCHES: tuple[SeplosBMSSwitchDescription, ...] = (
-    # Byte 1: Tensions cellules et pack
+    # Tensions cellules et pack (SFA 0x1400..0x1407)
     SeplosBMSSwitchDescription(
         key="switch_cell_ov_alarm",
         name="Activer alarme surtension cellule",
         icon="mdi:bell-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=0,
+        coil_addr=0x1400,
+        v2_byte_idx=1,
+        v2_bit_idx=0,
     ),
     SeplosBMSSwitchDescription(
         key="switch_cell_ov_protect",
         name="Activer protection surtension cellule",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=1,
+        coil_addr=0x1401,
+        v2_byte_idx=1,
+        v2_bit_idx=1,
     ),
     SeplosBMSSwitchDescription(
         key="switch_cell_uv_alarm",
         name="Activer alarme sous-tension cellule",
         icon="mdi:bell-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=2,
+        coil_addr=0x1402,
+        v2_byte_idx=1,
+        v2_bit_idx=2,
     ),
     SeplosBMSSwitchDescription(
         key="switch_cell_uv_protect",
         name="Activer protection sous-tension cellule",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=3,
+        coil_addr=0x1403,
+        v2_byte_idx=1,
+        v2_bit_idx=3,
     ),
     SeplosBMSSwitchDescription(
         key="switch_pack_ov_alarm",
         name="Activer alarme surtension pack",
         icon="mdi:bell-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=4,
+        coil_addr=0x1404,
+        v2_byte_idx=1,
+        v2_bit_idx=4,
     ),
     SeplosBMSSwitchDescription(
         key="switch_pack_ov_protect",
         name="Activer protection surtension pack",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=5,
+        coil_addr=0x1405,
+        v2_byte_idx=1,
+        v2_bit_idx=5,
     ),
     SeplosBMSSwitchDescription(
         key="switch_pack_uv_alarm",
         name="Activer alarme sous-tension pack",
         icon="mdi:bell-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=6,
+        coil_addr=0x1406,
+        v2_byte_idx=1,
+        v2_bit_idx=6,
     ),
     SeplosBMSSwitchDescription(
         key="switch_pack_uv_protect",
         name="Activer protection sous-tension pack",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=1,
-        bit_idx=7,
+        coil_addr=0x1407,
+        v2_byte_idx=1,
+        v2_bit_idx=7,
     ),
-    # Byte 2: Températures charge & décharge
+    # Températures charge & décharge (SFA 0x1408..0x140F)
     SeplosBMSSwitchDescription(
         key="switch_chrg_ot_warn",
         name="Activer alarme surchauffe charge",
         icon="mdi:thermometer-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=0,
+        coil_addr=0x1408,
+        v2_byte_idx=2,
+        v2_bit_idx=0,
     ),
     SeplosBMSSwitchDescription(
         key="switch_chrg_ot_protect",
         name="Activer protection surchauffe charge",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=1,
+        coil_addr=0x1409,
+        v2_byte_idx=2,
+        v2_bit_idx=1,
     ),
     SeplosBMSSwitchDescription(
         key="switch_chrg_ut_warn",
         name="Activer alarme gel/froid charge",
         icon="mdi:snowflake-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=2,
+        coil_addr=0x140A,
+        v2_byte_idx=2,
+        v2_bit_idx=2,
     ),
     SeplosBMSSwitchDescription(
         key="switch_chrg_ut_protect",
         name="Activer protection froid charge",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=3,
+        coil_addr=0x140B,
+        v2_byte_idx=2,
+        v2_bit_idx=3,
     ),
     SeplosBMSSwitchDescription(
         key="switch_dischrg_ot_warn",
         name="Activer alarme surchauffe décharge",
         icon="mdi:thermometer-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=4,
+        coil_addr=0x140C,
+        v2_byte_idx=2,
+        v2_bit_idx=4,
     ),
     SeplosBMSSwitchDescription(
         key="switch_dischrg_ot_protect",
         name="Activer protection surchauffe décharge",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=5,
+        coil_addr=0x140D,
+        v2_byte_idx=2,
+        v2_bit_idx=5,
     ),
     SeplosBMSSwitchDescription(
         key="switch_dischrg_ut_warn",
         name="Activer alarme froid décharge",
         icon="mdi:snowflake-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=6,
+        coil_addr=0x140E,
+        v2_byte_idx=2,
+        v2_bit_idx=6,
     ),
     SeplosBMSSwitchDescription(
         key="switch_dischrg_ut_protect",
         name="Activer protection froid décharge",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=2,
-        bit_idx=7,
+        coil_addr=0x140F,
+        v2_byte_idx=2,
+        v2_bit_idx=7,
     ),
-    # Byte 4: Surintensité & court-circuit
+    # Surintensité & court-circuit (SFA 0x1420..0x1426)
     SeplosBMSSwitchDescription(
         key="switch_chrg_oc_warn",
         name="Activer alarme surintensité charge",
         icon="mdi:flash-alert",
         is_bit_param=True,
-        byte_idx=4,
-        bit_idx=0,
+        coil_addr=0x1420,
+        v2_byte_idx=4,
+        v2_bit_idx=0,
     ),
     SeplosBMSSwitchDescription(
         key="switch_chrg_oc_protect",
         name="Activer protection surintensité charge",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=4,
-        bit_idx=1,
+        coil_addr=0x1421,
+        v2_byte_idx=4,
+        v2_bit_idx=1,
     ),
     SeplosBMSSwitchDescription(
         key="switch_dischrg_oc_warn",
         name="Activer alarme surintensité décharge",
         icon="mdi:flash-alert",
         is_bit_param=True,
-        byte_idx=4,
-        bit_idx=2,
+        coil_addr=0x1423,
+        v2_byte_idx=4,
+        v2_bit_idx=2,
     ),
     SeplosBMSSwitchDescription(
         key="switch_dischrg_oc_protect",
         name="Activer protection surintensité décharge",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=4,
-        bit_idx=3,
+        coil_addr=0x1424,
+        v2_byte_idx=4,
+        v2_bit_idx=3,
     ),
     SeplosBMSSwitchDescription(
         key="switch_short_circuit_protect",
         name="Activer protection court-circuit",
         icon="mdi:shield-alert",
         is_bit_param=True,
-        byte_idx=4,
-        bit_idx=5,
+        coil_addr=0x1426,
+        v2_byte_idx=4,
+        v2_bit_idx=5,
     ),
-    # Byte 6: Équilibrage charge & statique
+    # Équilibrage charge & statique (SFA 0x1438..0x1439)
     SeplosBMSSwitchDescription(
         key="switch_charge_balance_func",
         name="Activer fonction équilibrage en charge",
         icon="mdi:scale-balance",
         is_bit_param=True,
-        byte_idx=6,
-        bit_idx=0,
+        coil_addr=0x1438,
+        v2_byte_idx=6,
+        v2_bit_idx=0,
     ),
     SeplosBMSSwitchDescription(
         key="switch_static_balance_func",
         name="Activer fonction équilibrage au repos",
         icon="mdi:scale-balance",
         is_bit_param=True,
-        byte_idx=6,
-        bit_idx=1,
+        coil_addr=0x1439,
+        v2_byte_idx=6,
+        v2_bit_idx=1,
     ),
 )
 
@@ -297,7 +321,9 @@ class SeplosBMSSwitch(CoordinatorEntity[SeplosBMSCoordinator], SwitchEntity):
     def is_on(self) -> bool:
         """Return True if entity is on."""
         if self.coordinator.data and self._key in self.coordinator.data:
-            return bool(self.coordinator.data.get(self._key, False))
+            val = self.coordinator.data.get(self._key)
+            if val is not None:
+                return bool(val)
         if self._current_state is not None:
             return self._current_state
         return self._desc.default_on
@@ -306,7 +332,11 @@ class SeplosBMSSwitch(CoordinatorEntity[SeplosBMSCoordinator], SwitchEntity):
         """Turn the switch on."""
         if self._desc.is_bit_param:
             success = await self.coordinator.async_set_bit_param(
-                self._desc.byte_idx, self._desc.bit_idx, True, self._key
+                coil_addr=self._desc.coil_addr,
+                state=True,
+                key=self._key,
+                v2_byte_idx=self._desc.v2_byte_idx,
+                v2_bit_idx=self._desc.v2_bit_idx,
             )
         else:
             success = await self.coordinator.async_set_switch(self._key, True)
@@ -319,7 +349,11 @@ class SeplosBMSSwitch(CoordinatorEntity[SeplosBMSCoordinator], SwitchEntity):
         """Turn the switch off."""
         if self._desc.is_bit_param:
             success = await self.coordinator.async_set_bit_param(
-                self._desc.byte_idx, self._desc.bit_idx, False, self._key
+                coil_addr=self._desc.coil_addr,
+                state=False,
+                key=self._key,
+                v2_byte_idx=self._desc.v2_byte_idx,
+                v2_bit_idx=self._desc.v2_bit_idx,
             )
         else:
             success = await self.coordinator.async_set_switch(self._key, False)

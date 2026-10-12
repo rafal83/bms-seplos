@@ -60,6 +60,7 @@ class SeplosBMSUpdateButton(
 
     async def async_press(self) -> None:
         """Handle the button press."""
+        self.coordinator.invalidate_param_cache()
         await self.coordinator.async_request_refresh()
 
 
